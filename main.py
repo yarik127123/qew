@@ -1,6 +1,13 @@
 from pygame import *
 from random import randint
 from math import hypot
+from socket import socket, AF_INET, SOCK_STREAM
+from threading import Thread
+
+sock = socket(AF_INET,SOCK_STREAM)
+sock.connect(("localhost",8080))
+sock.setblocking(False)
+
 
 init()
 
@@ -52,28 +59,52 @@ class Food:
     def draw(self, sx, sy):
         draw.circle(screen, self.color, (sx,sy), self.r)
 
+my_data = list(map(int, sock.recv(64).decode().strip().split(",")))
+my_id = my_data[0]
+my_Player = Player(my_data[1], my_data[2], my_data[3], "Player")
 
-my_Player = Player(0,0,30,"Player")
+all_players = []
 foods = [Food() for _ in range(300)]
 
 
 
+def recieve_data():
+   global all_players, running, lose
+   while running:
+      try:
+         data = sock.recv(4096).decode().strip()
+         if data == "LOSE":
+            lose = True
+         elif data:
+            parts = data.strip('|').split('|')
+            all_players = [list(map(int, p.split(","))) for p in parts if len(p.split(',')) ==]
+
+      expert:
+         pass 
+
+Thread(target=recieve_data, deamon=True).start()
 
 
 
 while running:
-    for i in event.get():
+   for i in event.get():
         if i.type == QUIT:
             running = False
-    screen.fill((255,255,255))
+   screen.fill((255,255,255))
 
-    scale = max(0.3, min(50, my_Player.r / 50))
-    my_Player.move()
-    my_Player.draw(scale)
+   scale = max(0.3, min(50, my_Player.r / 50))
+   my_Player.move()
+   my_Player.draw(scale)
+
+   for p in all_players:
+      if p[0] == my_id: continue
+      sx = int((p[1] - my_Player.x) * scale + WINDOW_SIZE[0] // 2)
+      sy = int((p[2] - my_Player.y) * scale + WINDOW_SIZE[1] // 2)
+      draw.circle(screen, (2,255,0),(sx,sy),int(p[3] * scale))
 
 
-    to_remove = []
-    for f in foods:
+   to_remove = []
+   for f in foods:
         if f.check_collision(my_Player):
             my_Player.r += int(f.r * 0.2)
             to_remove.append(f)
@@ -82,8 +113,7 @@ while running:
             sy = int((f.y - my_Player.y) * scale + 300)
             f.draw(sx,sy)
 
-    for f in to_remove: foods.remove(f)
+   for f in to_remove: foods.remove(f)
 
-    display.update()
-    clk.tick(FPS)
-
+   display.update()
+   clk.tick(FPS)
