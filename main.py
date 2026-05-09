@@ -4,8 +4,16 @@ from math import hypot
 from socket import socket, AF_INET, SOCK_STREAM
 from threading import Thread
 
+from connection import Launcher
+
+app = Launcher()
+host = app.host
+nickname = app.username
+port = app.sort
+print(host,port,nickname)
+
 sock = socket(AF_INET,SOCK_STREAM)
-sock.connect(("localhost",8080))
+sock.connect((host,port))
 sock.setblocking(False)
 
 
